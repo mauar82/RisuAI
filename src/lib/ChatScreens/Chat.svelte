@@ -1,13 +1,13 @@
 <script lang="ts">
     import { ArrowLeft, ArrowRight, EditIcon, LanguagesIcon, RefreshCcwIcon, TrashIcon, CopyIcon } from "lucide-svelte";
-    import { ParseMarkdown } from "../../ts/parser";
+    import { ParseMarkdown, type simpleCharacterArgument } from "../../ts/parser";
     import AutoresizeArea from "../UI/GUI/TextAreaResizable.svelte";
     import { alertConfirm } from "../../ts/alert";
     import { language } from "../../lang";
     import { DataBase, type character, type groupChat } from "../../ts/storage/database";
-    import { selectedCharID } from "../../ts/stores";
+    import { CurrentChat, selectedCharID } from "../../ts/stores";
     import { translate } from "../../ts/translator/translator";
-  import { risuChatParser } from "src/ts/process/scripts";
+    import { risuChatParser } from "src/ts/process/scripts";
     export let message = ''
     export let name = ''
     export let isLastMemory:boolean
@@ -16,7 +16,7 @@
     export let rerollIcon = false
     export let onReroll = () => {}
     export let unReroll = () => {}
-    export let character:character|groupChat|null = null
+    export let character:simpleCharacterArgument|string|null = null
     let translating = false
     let editMode = false
     let statusMessage:string = ''
@@ -30,27 +30,27 @@
         if(rm){
             if($DataBase.instantRemove){
                 const r = await alertConfirm(language.instantRemoveConfirm)
-                let msg = $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message
+                let msg = $CurrentChat.message
                 if(!r){
                     msg = msg.slice(0, idx)
                 }
                 else{
                     msg.splice(idx, 1)
                 }
-                $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message = msg
+                $CurrentChat.message = msg
             }
             else{
-                let msg = $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message
+                let msg = $CurrentChat.message
                 msg.splice(idx, 1)
-                $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message = msg
+                $CurrentChat.message = msg
             }
         }
     }
 
     async function edit(){
-        let msg = $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message
+        let msg = $CurrentChat.message
         msg[idx].data = message
-        $DataBase.characters[$selectedCharID].chats[$DataBase.characters[$selectedCharID].chatPage].message = msg
+        $CurrentChat.message = msg
     }
 
     async function displaya(message:string){

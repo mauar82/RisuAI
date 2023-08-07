@@ -14,7 +14,7 @@ import type { Proompt } from '../process/proompt';
 
 export const DataBase = writable({} as any as Database)
 export const loadedStore = writable(false)
-export let appVer = "1.46.0"
+export let appVer = "1.47.0"
 export let webAppSubVer = ''
 
 export function setDatabase(data:Database){
@@ -302,7 +302,7 @@ export function setDatabase(data:Database){
     data.colorScheme ??= cloneDeep(defaultColorScheme)
     data.colorSchemeName ??= 'default'
     data.NAIsettings.starter ??= ""
-    
+    data.hypaModel ??= 'MiniLM'
     
     changeLanguage(data.language)
     DataBase.set(data)
@@ -620,6 +620,7 @@ export interface Database{
     colorSchemeName:string
     promptTemplate?:Proompt[]
     forceProxyAsOpenAI?:boolean
+    hypaModel:'ada'|'MiniLM'
 }
 
 interface hordeConfig{

@@ -202,7 +202,7 @@ export async function supaMemory(
         let hypaResult = ""
 
         if(arg.asHyper){
-            const hypa = new HypaProcesser()
+            const hypa = new HypaProcesser(db.hypaModel)
             hypa.oaikey = db.supaMemoryKey
             hypa.vectors = []
             hypaChunks = hypaChunks.filter((value) => value.length > 1)
@@ -214,8 +214,10 @@ export async function supaMemory(
             hypaResult = "past events: " + s.slice(0,3).join("\n")
             currentTokens += await tokenizer.tokenizeChat({
                 role: "assistant",
-                content: hypaResult
+                content: hypaResult,
+                memo: "hypaMemory"
             })
+            currentTokens += 10
         }
 
         while(currentTokens > maxContextTokens){
@@ -264,10 +266,11 @@ export async function supaMemory(
                 const tokens = await tokenizer.tokenizeChat(cont)
                 if((chunkSize + tokens) > maxChunkSize){
                     if(stringlizedChat === ''){
-                        
-
                         if(cont.role !== 'function' && cont.role !== 'system'){
                             stringlizedChat += `${cont.role === 'assistant' ? char.type === 'group' ? '' : char.name : db.username}: ${cont.content}\n\n`
+                            spiceLen += 1
+                            currentTokens -= tokens
+                            chunkSize += tokens
                         }
                     }
                     lastId = cont.memo
@@ -288,37 +291,28 @@ export async function supaMemory(
                 }
     
                 const tokenz = await tokenize(result + '\n\n')
-                currentTokens += tokenz
-                supaMemory += result.replace(/\n+/g,'\n') + '\n\n'
+                hypaChunks.push(result.replace(/\n+/g,'\n'))
 
-                let SupaMemoryList = supaMemory.split('\n\n')
+                let SupaMemoryList = supaMemory.split('\n\n').filter((value) => value.length > 1)
                 if(SupaMemoryList.length >= (arg.asHyper ? 3 : 4)){
                     const oldSupaMemory = supaMemory
-                    let modifies:string[] = []
-                    for(let i=0;i<3;i++){
-                        modifies.push(SupaMemoryList.shift())
-                    }
-                    hypaChunks.push(...modifies)
-
                     const result = await summarize(supaMemory)
                     if(typeof(result) !== 'string'){
                         return result
                     }
-
-                    modifies.unshift(result.replace(/\n+/g,'\n'))
-                    supaMemory = modifies.join('\n\n') + '\n\n'
-
+                    supaMemory = result
                     currentTokens -= await tokenize(oldSupaMemory)
                     currentTokens += await tokenize(supaMemory)
                 }
-                console.log(supaMemory)
+                currentTokens += tokenz
+                supaMemory += result.replace(/\n+/g,'\n')
             }
         }
 
         chats.unshift({
             role: "system",
             content: supaMemory,
-            name: "supaMemory"
+            memo: "supaMemory"
         })
 
         
